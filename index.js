@@ -54,6 +54,26 @@ async function run() {
       const result = await partsCollection.findOne(query);
       res.send(result);
     });
+    //*=============== update quantity ========================
+    app.put("/parts/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateQty = req.body;
+
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+
+      const updateDoc = {
+        $set: {
+          available: updateQty.newAvailable,
+        },
+      };
+      const result = await partsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
   } finally {
   }
 }
