@@ -1,4 +1,5 @@
 const express = require("express");
+const app = express();
 const cors = require("cors");
 const corsConfig = {
   origin: "*",
@@ -20,7 +21,6 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const verify = require("jsonwebtoken/verify");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const app = express();
 const port = process.env.PORT || 5001;
 
 // * middleware
