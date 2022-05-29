@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-
 const jwt = require("jsonwebtoken");
 const verify = require("jsonwebtoken/verify");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5001;
 
@@ -59,6 +59,7 @@ async function run() {
     const partsCollection = client.db("computer").collection("parts");
     const orderCollection = client.db("computer").collection("order");
     const usersCollection = client.db("computer").collection("users");
+    const paymentCollection = client.db("computer").collection("payment");
 
     // * -------------- Admin checker middletier ---------------
     const verifyAdmin = async (req, res, next) => {
@@ -72,6 +73,19 @@ async function run() {
         res.status(403).send({ message: "forbidden" });
       }
     };
+
+    //* ----------- payment intent ------------------------
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const service = req.body;
+      const price = service.cost;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
 
     //*-------- collecting user and sending token -------------------
     app.put("/user/:email", async (req, res) => {
@@ -119,7 +133,7 @@ async function run() {
       res.send({ admin: isAdmin });
     });
 
-    // * --------- get all from db ------------------
+    // * --------- get all products from db ------------------
     app.get("/parts", async (req, res) => {
       const query = {};
       const cursor = partsCollection.find(query);
@@ -160,6 +174,13 @@ async function run() {
 
       res.send(result);
     });
+    //* -------------- get particular order ---------------
+    app.get("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const order = await orderCollection.findOne(query);
+      res.send(order);
+    });
 
     //* ------------ get order by email -----------------
     app.get("/order", verifyJWT, async (req, res) => {
@@ -173,6 +194,22 @@ async function run() {
       } else {
         return res.status(403).send({ message: "forbidden access" });
       }
+    });
+    //* --------------- update order payment status --------------
+    app.put("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+
+      const result = await paymentCollection.insertOne(payment);
+      const updatedOrder = await orderCollection.updateOne(filter, updatedDoc);
+      res.send(updatedOrder);
     });
   } finally {
   }
