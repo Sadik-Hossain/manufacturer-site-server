@@ -36,11 +36,52 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
+
+//* ------------- JWT verification middletier ---------------
+
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "UnAuthorized access" });
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "Forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 async function run() {
   try {
     await client.connect();
     const partsCollection = client.db("computer").collection("parts");
     const orderCollection = client.db("computer").collection("order");
+    const usersCollection = client.db("computer").collection("users");
+
+    //*-------- collecting user and sending token -------------------
+    app.put("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      const token = jwt.sign(
+        { email: email },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "7d" }
+      );
+      res.send({ result, token });
+    });
+
     // * --------- get all from db ------------------
     app.get("/parts", async (req, res) => {
       const query = {};
@@ -83,13 +124,18 @@ async function run() {
       res.send(result);
     });
 
-    //* get order by email
-    app.get("/order", async (req, res) => {
+    //* ------------ get order by email -----------------
+    app.get("/order", verifyJWT, async (req, res) => {
       const email = req.query.email;
-      const query = { email: email };
-      const cursor = orderCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result);
+      const decodedEmail = req.decoded.email;
+      if (email === decodedEmail) {
+        const query = { email: email };
+        const cursor = orderCollection.find(query);
+        const result = await cursor.toArray();
+        res.send(result);
+      } else {
+        return res.status(403).send({ message: "forbidden access" });
+      }
     });
   } finally {
   }
