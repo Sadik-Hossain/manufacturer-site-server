@@ -81,7 +81,22 @@ async function run() {
       );
       res.send({ result, token });
     });
+    //* ----------- get users ---------------------
+    app.get("/user", async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users);
+    });
 
+    //* -------------- make user admin ----------------
+    app.put("/user/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { role: "admin" },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
     // * --------- get all from db ------------------
     app.get("/parts", async (req, res) => {
       const query = {};
