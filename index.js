@@ -40,6 +40,7 @@ async function run() {
   try {
     await client.connect();
     const partsCollection = client.db("computer").collection("parts");
+    const orderCollection = client.db("computer").collection("order");
     // * --------- get all from db ------------------
     app.get("/parts", async (req, res) => {
       const query = {};
@@ -72,6 +73,22 @@ async function run() {
         updateDoc,
         options
       );
+      res.send(result);
+    });
+    //* ----------------- adding order ---------------
+    app.post("/order", async (req, res) => {
+      const order = req.body;
+      const result = await orderCollection.insertOne(order);
+
+      res.send(result);
+    });
+
+    //* get order by email
+    app.get("/order", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const cursor = orderCollection.find(query);
+      const result = await cursor.toArray();
       res.send(result);
     });
   } finally {
