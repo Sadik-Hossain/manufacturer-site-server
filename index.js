@@ -76,6 +76,9 @@ async function run() {
     const orderCollection = client.db("computer").collection("order");
     const usersCollection = client.db("computer").collection("users");
     const paymentCollection = client.db("computer").collection("payment");
+    const testimonialsCollection = client
+      .db("computer")
+      .collection("testimonials");
 
     // * -------------- Admin checker middletier ---------------
     const verifyAdmin = async (req, res, next) => {
@@ -197,7 +200,14 @@ async function run() {
       const order = await orderCollection.findOne(query);
       res.send(order);
     });
-
+    //*---------------- deleting order ---------------
+    app.delete("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await orderCollection.deleteOne(filter);
+      const order = await orderCollection.insertOne(order);
+      res.send(result);
+    });
     //* ------------ get order by email -----------------
     app.get("/order", verifyJWT, async (req, res) => {
       const email = req.query.email;
@@ -226,6 +236,13 @@ async function run() {
       const result = await paymentCollection.insertOne(payment);
       const updatedOrder = await orderCollection.updateOne(filter, updatedDoc);
       res.send(updatedOrder);
+    });
+    //* ---------------- get testimonials ----------------------
+    app.get("/testimonials", async (req, res) => {
+      const query = {};
+      const cursor = testimonialsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
     });
   } finally {
   }
