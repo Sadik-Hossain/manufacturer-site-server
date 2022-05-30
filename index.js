@@ -79,6 +79,7 @@ async function run() {
     const testimonialsCollection = client
       .db("computer")
       .collection("testimonials");
+    const reviewCollection = client.db("computer").collection("reviews");
 
     // * -------------- Admin checker middletier ---------------
     const verifyAdmin = async (req, res, next) => {
@@ -127,10 +128,33 @@ async function run() {
       );
       res.send({ result, token });
     });
-    //* ----------- get users ---------------------
-    app.get("/user", verifyJWT, async (req, res) => {
+    //* ----------- get all users ---------------------
+    app.get("/user", verifyJWT, verifyAdmin, async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send(users);
+    });
+    //* ----------- get particular user ----------------
+    app.get("/user/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
+    //* --------------- update user info -------------------
+    app.put("/user/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const updateInfo = req.body;
+      console.log(email, updateInfo);
+      const updateDoc = {
+        $set: {
+          address: updateInfo?.address,
+          education: updateInfo?.education,
+          link: updateInfo?.link,
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
 
     //* -------------- make user admin ----------------
@@ -186,6 +210,12 @@ async function run() {
       );
       res.send(result);
     });
+    //* ----------------- get all orders -------------------------
+    app.get("/order", verifyJWT, verifyAdmin, async (req, res) => {
+      const orders = await orderCollection.find().toArray();
+      res.send(orders);
+    });
+
     //* ----------------- adding order ---------------
     app.post("/order", async (req, res) => {
       const order = req.body;
@@ -240,6 +270,20 @@ async function run() {
     app.get("/testimonials", async (req, res) => {
       const query = {};
       const cursor = testimonialsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    // * ------------- post reviews --------------------------
+    app.post("/reviews", async (req, res) => {
+      const data = req.body;
+      const result = await reviewCollection.insertOne(data);
+
+      res.send(result);
+    });
+    //* ---------------- get reviews ------------------
+    app.get("/reviews", async (req, res) => {
+      const query = {};
+      const cursor = reviewCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
