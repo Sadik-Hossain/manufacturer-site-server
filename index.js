@@ -1,6 +1,16 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const verify = require("jsonwebtoken/verify");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const port = process.env.PORT || 5001;
+
+// * middleware
+app.use(cors());
+app.use(express.json());
 const corsConfig = {
   origin: "*",
   credentials: true,
@@ -17,16 +27,6 @@ app.use(function (req, res, next) {
   );
   next();
 });
-require("dotenv").config();
-const jwt = require("jsonwebtoken");
-const verify = require("jsonwebtoken/verify");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const port = process.env.PORT || 5001;
-
-// * middleware
-app.use(cors());
-app.use(express.json());
-
 function verifyJWT(req, res, next) {
   //* reading header
   const authHeader = req.headers.authorization;
@@ -205,7 +205,6 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const result = await orderCollection.deleteOne(filter);
-      const order = await orderCollection.insertOne(order);
       res.send(result);
     });
     //* ------------ get order by email -----------------
