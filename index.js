@@ -288,6 +288,20 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+
+    //* ---------------- adding products -----------------
+    app.post("/parts", async (req, res) => {
+      const data = req.body;
+      const result = await partsCollection.insertOne(data);
+      res.send(result);
+    });
+    //* ----------- deleting products ------------------
+    app.delete("/parts/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await partsCollection.deleteOne(filter);
+      res.send(result);
+    });
   } finally {
   }
 }
