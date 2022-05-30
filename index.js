@@ -239,17 +239,13 @@ async function run() {
       res.send(result);
     });
     //* ------------ get order by email -----------------
-    app.get("/order", async (req, res) => {
+    app.get("/myorder", async (req, res) => {
       const email = req.query.email;
-      // const decodedEmail = req.decoded.email;
-      // if (email === decodedEmail) {
+
       const query = { email: email };
       const cursor = orderCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
-      // } else {
-      //   return res.status(403).send({ message: "forbidden access" });
-      // }
     });
     //* --------------- update order payment status --------------
     app.put("/order/:id", async (req, res) => {
