@@ -27,22 +27,22 @@ app.use(function (req, res, next) {
   );
   next();
 });
-function verifyJWT(req, res, next) {
-  //* reading header
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).send({ message: "unauthorized access" });
-  }
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
-    if (err) {
-      return res.status(403).send({ message: "forbidden access" });
-    }
-    console.log(decoded);
-    req.decoded = decoded;
-    next();
-  });
-}
+// function verifyJWT(req, res, next) {
+//   //* reading header
+//   const authHeader = req.headers.authorization;
+//   if (!authHeader) {
+//     return res.status(401).send({ message: "unauthorized access" });
+//   }
+//   const token = authHeader.split(" ")[1];
+//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+//     if (err) {
+//       return res.status(403).send({ message: "forbidden access" });
+//     }
+//     console.log(decoded);
+//     req.decoded = decoded;
+//     next();
+//   });
+// }
 // * ========= mongoDB =====================
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -82,20 +82,20 @@ async function run() {
     const reviewCollection = client.db("computer").collection("reviews");
 
     // * -------------- Admin checker middletier ---------------
-    const verifyAdmin = async (req, res, next) => {
-      const requester = req.decoded.email;
-      const requesterAccount = await usersCollection.findOne({
-        email: requester,
-      });
-      if (requesterAccount.role === "admin") {
-        next();
-      } else {
-        res.status(403).send({ message: "forbidden" });
-      }
-    };
+    // const verifyAdmin = async (req, res, next) => {
+    //   const requester = req.decoded.email;
+    //   const requesterAccount = await usersCollection.findOne({
+    //     email: requester,
+    //   });
+    //   if (requesterAccount.role === "admin") {
+    //     next();
+    //   } else {
+    //     res.status(403).send({ message: "forbidden" });
+    //   }
+    // };
 
     //* ----------- payment intent ------------------------
-    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+    app.post("/create-payment-intent", async (req, res) => {
       const service = req.body;
       const price = service.cost;
       const amount = price * 100;
@@ -129,19 +129,19 @@ async function run() {
       res.send({ result, token });
     });
     //* ----------- get all users ---------------------
-    app.get("/user", verifyJWT, verifyAdmin, async (req, res) => {
+    app.get("/user", async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send(users);
     });
     //* ----------- get particular user ----------------
-    app.get("/user/:email", verifyJWT, async (req, res) => {
+    app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
     //* --------------- update user info -------------------
-    app.put("/user/:email", verifyJWT, async (req, res) => {
+    app.put("/user/:email", async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
       const updateInfo = req.body;
@@ -158,7 +158,7 @@ async function run() {
     });
 
     //* -------------- make user admin ----------------
-    app.put("/user/admin/:email", verifyJWT, verifyAdmin, async (req, res) => {
+    app.put("/user/admin/:email", async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
       const updateDoc = {
@@ -211,7 +211,7 @@ async function run() {
       res.send(result);
     });
     //* ----------------- get all orders -------------------------
-    app.get("/order", verifyJWT, verifyAdmin, async (req, res) => {
+    app.get("/order", async (req, res) => {
       const orders = await orderCollection.find().toArray();
       res.send(orders);
     });
@@ -238,20 +238,20 @@ async function run() {
       res.send(result);
     });
     //* ------------ get order by email -----------------
-    app.get("/order", verifyJWT, async (req, res) => {
+    app.get("/order", async (req, res) => {
       const email = req.query.email;
-      const decodedEmail = req.decoded.email;
-      if (email === decodedEmail) {
-        const query = { email: email };
-        const cursor = orderCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result);
-      } else {
-        return res.status(403).send({ message: "forbidden access" });
-      }
+      // const decodedEmail = req.decoded.email;
+      // if (email === decodedEmail) {
+      const query = { email: email };
+      const cursor = orderCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+      // } else {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
     });
     //* --------------- update order payment status --------------
-    app.put("/order/:id", verifyJWT, async (req, res) => {
+    app.put("/order/:id", async (req, res) => {
       const id = req.params.id;
       const payment = req.body;
       const filter = { _id: ObjectId(id) };
