@@ -151,6 +151,7 @@ async function run() {
           address: updateInfo?.address,
           education: updateInfo?.education,
           link: updateInfo?.link,
+          phone: updateInfo?.phone,
         },
       };
       const result = await usersCollection.updateOne(filter, updateDoc);
